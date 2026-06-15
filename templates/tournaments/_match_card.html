@@ -1,0 +1,37 @@
+<div class="match-slot">
+  <div class="match-card {% if match.is_ready %}ready{% elif match.is_complete %}complete{% endif %}">
+
+    <!-- Player 1 -->
+    <form method="post" action="{% url 'record_match_result' tournament.pk match.pk %}" style="display:contents">
+      {% csrf_token %}
+      <input type="hidden" name="winner_id" value="{{ match.player1.pk }}">
+      <div class="match-player {% if match.winner == match.player1 %}winner{% elif match.winner and match.winner != match.player1 %}loser{% endif %}{% if not match.player1 %} bye{% endif %}">
+        <span class="seed">{% if match.player1 %}{{ match.player1.seed }}{% endif %}</span>
+        <span class="name">
+          {% if match.player1 %}{{ match.player1.player.name }}
+          {% else %}<span class="tbd">TBD</span>{% endif %}
+        </span>
+        {% if can_manage and match.is_ready %}
+          <button type="submit" class="pick-btn">Win</button>
+        {% endif %}
+      </div>
+    </form>
+
+    <!-- Player 2 -->
+    <form method="post" action="{% url 'record_match_result' tournament.pk match.pk %}" style="display:contents">
+      {% csrf_token %}
+      <input type="hidden" name="winner_id" value="{{ match.player2.pk }}">
+      <div class="match-player {% if match.winner == match.player2 %}winner{% elif match.winner and match.winner != match.player2 %}loser{% endif %}{% if not match.player2 %} bye{% endif %}">
+        <span class="seed">{% if match.player2 %}{{ match.player2.seed }}{% endif %}</span>
+        <span class="name">
+          {% if match.player2 %}{{ match.player2.player.name }}
+          {% else %}<span class="tbd">TBD</span>{% endif %}
+        </span>
+        {% if can_manage and match.is_ready %}
+          <button type="submit" class="pick-btn">Win</button>
+        {% endif %}
+      </div>
+    </form>
+
+  </div>
+</div>

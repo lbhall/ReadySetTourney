@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% block title %}Bracket — {{ tournament.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .bracket-wrap {
+    overflow-x: auto;
+    padding-bottom: 16px;
+  }
+  .bracket {
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+    min-width: max-content;
+  }
+  .bracket-round {
+    display: flex;
+    flex-direction: column;
+    min-width: 220px;
+  }
+  .round-label {
+    text-align: center;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--muted);
+    font-weight: 700;
+    padding: 0 16px 12px;
+  }
+  .round-matches {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .match-slot {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    position: relative;
+  }
+  .match-card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .match-card.ready { border-color: var(--green); }
+  .match-card.complete { border-color: var(--border); }
+
+  .match-player {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    cursor: default;
+    transition: background .1s;
+    gap: 6px;
+  }
+  .match-player:first-child { border-bottom: 1px solid var(--border); }
+  .match-player.winner {
+    background: #052e16;
+    color: var(--green);
+    font-weight: 700;
+  }
+  .match-player.loser { color: var(--muted); }
+  .match-player .seed {
+    font-size: 0.7rem;
+    color: var(--muted);
+    min-width: 16px;
+  }
+  .match-player .name { flex: 1; }
+  .match-player .pick-btn {
+    background: var(--green);
+    color: #0f1117;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .match-card.ready .match-player:hover .pick-btn { opacity: 1; }
+  .match-card.ready .match-player:hover { background: var(--surface2); }
+
+  .bracket-round:not(:last-child) .match-slot::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 16px;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .tbd { color: var(--muted); font-style: italic; font-size: 0.82rem; }
+
+  .section-header {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    padding: 4px 0 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .losers-bracket .round-label { color: #f87171; }
+  .losers-bracket .match-card.ready { border-color: #f87171; }
+  .losers-bracket .match-card.ready .match-player:hover .pick-btn {
+    background: #f87171;
+  }
+  .losers-bracket .match-player.winner {
+    background: #3f1212;
+    color: #f87171;
+  }
+
+  .grand-final-section {
+    margin-top: 32px;
+  }
+  .grand-final-section .section-header { color: #fbbf24; }
+  .grand-final-section .match-card.ready { border-color: #fbbf24; }
+  .grand-final-section .match-card.ready .match-player:hover .pick-btn {
+    background: #fbbf24;
+    color: #1a1000;
+  }
+  .grand-final-section .match-player.winner {
+    background: #2d1f00;
+    color: #fbbf24;
+  }
+  .grand-final-section .bracket-round { min-width: 260px; }
+
+  .champion-banner {
+    background: linear-gradient(135deg, #052e16, #14532d);
+    border: 1px solid var(--green);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .champion-banner h2 { color: var(--green); font-size: 1.4rem; }
+  .champion-banner p  { color: var(--text); font-size: 1.1rem; margin-top: 6px; font-weight: 700; }
+
+  .bracket-reset-note {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 4px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:100%;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+    <div>
+      <a href="{% url 'tournament_detail' tournament.pk %}" class="text-muted text-sm" style="text-decoration:none;">← {{ tournament.name }}</a>
+      <h1 style="margin-top:6px;">Double Elimination Bracket</h1>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <span class="badge badge-{{ tournament.status }}">{{ tournament.get_status_display }}</span>
+      <span class="text-muted text-sm">{{ tournament.get_game_type_display }}</span>
+    </div>
+  </div>
+
+  <!-- Champion banner -->
+  {% if tournament.status == 'completed' %}
+    {% with final=gf_matches|last %}
+      {% if final.winner %}
+        <div class="champion-banner">
+          <h2>🏆 Champion</h2>
+          <p>{{ final.winner.player.name }}</p>
+        </div>
+      {% endif %}
+    {% endwith %}
+  {% endif %}
+
+  <!-- Winners Bracket -->
+  <div class="section-header">Winners Bracket</div>
+  <div class="bracket-wrap">
+    <div class="bracket">
+      {% for label, round_matches in wb_rounds %}
+        <div class="bracket-round">
+          <div class="round-label">{{ label }}</div>
+          <div class="round-matches">
+            {% for match in round_matches %}
+              {% include "tournaments/_match_card.html" with tournament=tournament match=match can_manage=can_manage %}
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Losers Bracket -->
+  {% if lb_rounds %}
+    <div class="section-header" style="margin-top:32px;">Losers Bracket</div>
+    <div class="bracket-wrap losers-bracket">
+      <div class="bracket">
+        {% for label, round_matches in lb_rounds %}
+          <div class="bracket-round">
+            <div class="round-label">{{ label }}</div>
+            <div class="round-matches">
+              {% for match in round_matches %}
+                {% include "tournaments/_match_card.html" with tournament=tournament match=match can_manage=can_manage %}
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Grand Final -->
+  <div class="grand-final-section">
+    <div class="section-header">Grand Final</div>
+    <div class="bracket-wrap">
+      <div class="bracket">
+        {% for match in gf_matches %}
+          <div class="bracket-round">
+            <div class="round-label">
+              {% if match.round_number == 1 %}Grand Final{% else %}Bracket Reset{% endif %}
+            </div>
+            <div class="round-matches">
+              {% include "tournaments/_match_card.html" with tournament=tournament match=match can_manage=can_manage %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% if gf_matches|length == 1 %}
+      <p class="bracket-reset-note">If the losers bracket finalist wins, a bracket reset match will be played.</p>
+    {% endif %}
+  </div>
+
+  {% if can_manage and tournament.status == 'active' %}
+    <p class="text-muted text-sm" style="margin-top:16px;">Hover over a match and click <strong>Win</strong> to record the result.</p>
+  {% endif %}
+
+</div>
+{% endblock %}

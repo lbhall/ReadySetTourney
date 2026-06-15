@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Register — On The Hill{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card" style="max-width:480px">
+    <div class="auth-title">
+      <h1>Create Account</h1>
+      <p>Join On The Hill to manage tournaments</p>
+    </div>
+
+    <div class="card">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label>Username</label>
+          {{ form.username }}
+          {% if form.username.errors %}<ul class="errorlist">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label>Email <span class="text-muted">(optional)</span></label>
+          {{ form.email }}
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          {{ form.password1 }}
+          {% if form.password1.errors %}<ul class="errorlist">{% for e in form.password1.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <div class="form-group">
+          <label>Confirm Password</label>
+          {{ form.password2 }}
+          {% if form.password2.errors %}<ul class="errorlist">{% for e in form.password2.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Create Account</button>
+      </form>
+    </div>
+
+    <p class="auth-footer">
+      Already have an account? <a href="{% url 'login' %}">Log in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}Create Tournament — On The Hill{% endblock %}
+
+{% block content %}
+<div class="container-sm">
+  <div class="page-header">
+    <h1>Create Tournament</h1>
+    <p>Set up a new pool tournament</p>
+  </div>
+
+  <div class="card">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <!-- Basic Info -->
+      <div class="card-header">
+        <span class="card-title">Tournament Details</span>
+      </div>
+
+      <div class="form-group">
+        <label>Tournament Name *</label>
+        {{ form.name }}
+        {% if form.name.errors %}<ul class="errorlist">{% for e in form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Game *</label>
+          {{ form.game_type }}
+          {% if form.game_type.errors %}<ul class="errorlist">{% for e in form.game_type.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>Format *</label>
+          {{ form.format }}
+          {% if form.format.errors %}<ul class="errorlist">{% for e in form.format.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date & Time</label>
+          {{ form.date }}
+        </div>
+        <div class="form-group">
+          <label>Entry Fee ($)</label>
+          {{ form.entry_fee }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Tournament Flyer</label>
+        {{ form.flyer }}
+        <p class="text-muted text-sm" style="margin-top:4px;">Upload an image (PNG, JPG, etc.)</p>
+      </div>
+
+      <div class="form-group">
+        <label>Notes / Rules</label>
+        {{ form.notes }}
+      </div>
+
+      <hr class="divider">
+
+      <!-- Venue -->
+      <div class="card-header">
+        <span class="card-title">Venue</span>
+      </div>
+
+      <div class="form-group">
+        <label>Select Existing Venue</label>
+        {{ form.venue }}
+      </div>
+
+      <div id="new-venue-section">
+        <p class="text-muted text-sm" style="margin-bottom:14px;">— or enter a new venue —</p>
+        <div class="form-group">
+          <label>Venue Name</label>
+          {{ form.venue_name }}
+          {% if form.venue_name.errors %}<ul class="errorlist">{% for e in form.venue_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="form-group">
+          <label>Address</label>
+          {{ form.venue_address }}
+        </div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label>City</label>
+            {{ form.venue_city }}
+            {% if form.venue_city.errors %}<ul class="errorlist">{% for e in form.venue_city.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+          <div class="form-group">
+            <label>State</label>
+            {{ form.venue_state }}
+            {% if form.venue_state.errors %}<ul class="errorlist">{% for e in form.venue_state.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+          <div class="form-group">
+            <label>ZIP</label>
+            {{ form.venue_zip }}
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <a href="{% url 'home' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Create Tournament</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Hide/show new venue section based on existing venue selection
+  const venueSelect = document.querySelector('[name="venue"]');
+  const newVenueSection = document.getElementById('new-venue-section');
+
+  function toggleVenueSection() {
+    // Show new venue fields when no existing venue is selected
+    newVenueSection.style.display = venueSelect.value ? 'none' : '';
+  }
+
+  venueSelect.addEventListener('change', toggleVenueSection);
+  toggleVenueSection();
+</script>
+{% endblock %}

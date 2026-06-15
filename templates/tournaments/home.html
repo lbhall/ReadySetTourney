@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}My Tournaments — On The Hill{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header flex items-center justify-between">
+    <div>
+      <h1>Tournaments</h1>
+      <p>Manage your pool tournaments</p>
+    </div>
+    <a href="{% url 'create_tournament' %}" class="btn btn-primary">+ Create Tournament</a>
+  </div>
+
+  <!-- Filter -->
+  <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+    <a href="{% url 'home' %}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-secondary{% endif %}">All</a>
+    <a href="?status=pending"   class="btn btn-sm {% if status_filter == 'pending'   %}btn-primary{% else %}btn-secondary{% endif %}">Registration Open</a>
+    <a href="?status=active"    class="btn btn-sm {% if status_filter == 'active'    %}btn-primary{% else %}btn-secondary{% endif %}">In Progress</a>
+    <a href="?status=completed" class="btn btn-sm {% if status_filter == 'completed' %}btn-primary{% else %}btn-secondary{% endif %}">Completed</a>
+  </div>
+
+  {% if tournaments %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+      {% for t in tournaments %}
+        <a href="{% url 'tournament_detail' t.pk %}" style="text-decoration:none;color:inherit;">
+          <div class="card" style="transition:border-color .15s;cursor:pointer;" onmouseenter="this.style.borderColor='var(--green)'" onmouseleave="this.style.borderColor='var(--border)'">
+            {% if t.flyer %}
+              <img src="{{ t.flyer.url }}" alt="Flyer" style="width:100%;height:160px;object-fit:cover;border-radius:6px;margin-bottom:14px;">
+            {% else %}
+              <div style="width:100%;height:80px;background:var(--surface2);border-radius:6px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;font-size:2.5rem;">🎱</div>
+            {% endif %}
+
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
+              <h3 style="font-size:1.05rem;font-weight:700;line-height:1.3;">{{ t.name }}</h3>
+              <span class="badge badge-{{ t.status }}">{{ t.get_status_display }}</span>
+            </div>
+
+            <p class="text-muted text-sm" style="margin-bottom:6px;">{{ t.get_game_type_display }}</p>
+
+            {% if t.venue %}
+              <p class="text-sm" style="color:var(--muted);margin-bottom:6px;">📍 {{ t.venue.name }}, {{ t.venue.city }}</p>
+            {% endif %}
+
+            {% if t.date %}
+              <p class="text-sm text-muted">📅 {{ t.date|date:"M j, Y g:i A" }}</p>
+            {% endif %}
+
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:16px;">
+              <span class="text-sm text-muted">👥 {{ t.player_count }} player{{ t.player_count|pluralize }}</span>
+              <span class="text-sm text-muted">{{ t.get_format_display }}</span>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card" style="text-align:center;padding:60px 24px;">
+      <div style="font-size:3rem;margin-bottom:16px;">🎱</div>
+      <h3 style="margin-bottom:8px;">No tournaments yet</h3>
+      <p class="text-muted text-sm" style="margin-bottom:20px;">Create your first tournament to get started.</p>
+      <a href="{% url 'create_tournament' %}" class="btn btn-primary">Create Tournament</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

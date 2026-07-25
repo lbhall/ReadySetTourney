@@ -17,6 +17,6 @@ echo "==> Collecting static files..."
 "$VENV/python" "$SOURCE_DIR/manage.py" collectstatic --noinput
 
 echo "==> Restarting gunicorn..."
-sudo systemctl restart gunicorn
+sudo systemctl restart gunicorn.readysettourney
 
 echo "==> Done."

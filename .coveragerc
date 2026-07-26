@@ -1,0 +1,12 @@
+[run]
+source = tournaments
+omit =
+    */migrations/*
+    */tests.py
+    */tests/*
+    */__init__.py
+    */apps.py
+    manage.py
+
+[report]
+show_missing = True

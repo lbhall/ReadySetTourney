@@ -159,6 +159,22 @@
     color: #f87171;
   }
 
+  /* Winners bracket and grand final share a row; GF to the right, centered
+     vertically so it sits beside the winners-bracket final. */
+  .wb-gf-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .wb-gf-row .wb-block {
+    flex: 1 1 auto;
+    min-width: 0;  /* let the winners bracket scroll instead of pushing GF away */
+  }
+  .wb-gf-row .grand-final-section {
+    flex: 0 0 auto;
+    margin-top: 0;
+  }
+
   .grand-final-section {
     margin-top: 32px;
   }
@@ -222,20 +238,47 @@
 
   {% include "tournaments/_placements.html" %}
 
-  <!-- Winners Bracket -->
-  <div class="section-header">Winners Bracket</div>
-  <div class="bracket-wrap winners-bracket">
-    <div class="bracket">
-      {% for label, round_matches in wb_rounds %}
-        <div class="bracket-round">
-          <div class="round-label">{{ label }}</div>
-          <div class="round-matches">
-            {% for match in round_matches %}
-              {% include "tournaments/_match_card.html" with tournament=tournament match=match can_manage=can_manage %}
-            {% endfor %}
-          </div>
+  <!-- Winners Bracket + Grand Final on one row (GF sits to the right of the
+       last winners-bracket round, at the same level). -->
+  <div class="wb-gf-row">
+    <div class="wb-block">
+      <div class="section-header">Winners Bracket</div>
+      <div class="bracket-wrap winners-bracket">
+        <div class="bracket">
+          {% for label, round_matches in wb_rounds %}
+            <div class="bracket-round">
+              <div class="round-label">{{ label }}</div>
+              <div class="round-matches">
+                {% for match in round_matches %}
+                  {% include "tournaments/_match_card.html" with tournament=tournament match=match can_manage=can_manage %}
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
         </div>
-      {% endfor %}
+      </div>
+    </div>
+
+    <!-- Grand Final -->
+    <div class="grand-final-section">
+      <div class="section-header">Grand Final</div>
+      <div class="bracket-wrap">
+        <div class="bracket">
+          {% for match in gf_matches %}
+            <div class="bracket-round">
+              <div class="round-label">
+                {% if match.round_number == 1 %}Grand Final{% else %}Bracket Reset{% endif %}
+              </div>
+              <div class="round-matches">
+                {% include "tournaments/_match_card.html" with tournament=tournament match=match can_manage=can_manage %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% if gf_matches|length == 1 %}
+        <p class="bracket-reset-note">If the losers bracket finalist wins, a bracket reset match will be played.</p>
+      {% endif %}
     </div>
   </div>
 
@@ -257,28 +300,6 @@
       </div>
     </div>
   {% endif %}
-
-  <!-- Grand Final -->
-  <div class="grand-final-section">
-    <div class="section-header">Grand Final</div>
-    <div class="bracket-wrap">
-      <div class="bracket">
-        {% for match in gf_matches %}
-          <div class="bracket-round">
-            <div class="round-label">
-              {% if match.round_number == 1 %}Grand Final{% else %}Bracket Reset{% endif %}
-            </div>
-            <div class="round-matches">
-              {% include "tournaments/_match_card.html" with tournament=tournament match=match can_manage=can_manage %}
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% if gf_matches|length == 1 %}
-      <p class="bracket-reset-note">If the losers bracket finalist wins, a bracket reset match will be played.</p>
-    {% endif %}
-  </div>
 
   {% if can_manage and tournament.status == 'active' %}
     <p class="text-muted text-sm" style="margin-top:16px;">Hover over a match and click <strong>Win</strong> to record the result.</p>

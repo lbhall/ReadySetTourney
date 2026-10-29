@@ -41,7 +41,7 @@
         <a href="{% url 'bracket' tournament.pk %}" class="btn btn-primary">View Bracket →</a>
       {% endif %}
 
-      {% if can_manage %}
+      {% if can_delete %}
         <form method="post" action="{% url 'delete_tournament' tournament.pk %}">
           {% csrf_token %}
           <button

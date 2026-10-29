@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.contrib.auth.models import User
 from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 
@@ -89,23 +90,47 @@ class DeleteTournamentViewTests(TestCase):
         self.user = make_user()
         self.t = make_tournament(self.user)
 
-    def test_delete_requires_owner(self):
-        other = make_user(username='other')
-        self.client.force_login(other)
+    def make_superuser(self):
+        return User.objects.create_superuser(username='boss', password='pass12345')
+
+    def test_owner_who_is_not_superuser_cannot_delete(self):
+        self.client.force_login(self.user)
         resp = self.client.post(reverse('delete_tournament', args=[self.t.pk]))
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 403)
         self.assertTrue(Tournament.objects.filter(pk=self.t.pk).exists())
 
-    def test_delete_success(self):
-        self.client.force_login(self.user)
+    def test_anonymous_cannot_delete(self):
+        resp = self.client.post(reverse('delete_tournament', args=[self.t.pk]))
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(Tournament.objects.filter(pk=self.t.pk).exists())
+
+    def test_superuser_deletes_anyones_tournament(self):
+        add_players(self.t, self.user, 2)
+        self.client.force_login(self.make_superuser())
         resp = self.client.post(reverse('delete_tournament', args=[self.t.pk]))
         self.assertRedirects(resp, reverse('home'))
         self.assertFalse(Tournament.objects.filter(pk=self.t.pk).exists())
+        self.assertFalse(TournamentEntry.objects.filter(tournament_id=self.t.pk).exists())
+
+    def test_superuser_missing_tournament_404(self):
+        self.client.force_login(self.make_superuser())
+        resp = self.client.post(reverse('delete_tournament', args=[999999]))
+        self.assertEqual(resp.status_code, 404)
 
     def test_delete_get_not_allowed(self):
-        self.client.force_login(self.user)
+        self.client.force_login(self.make_superuser())
         resp = self.client.get(reverse('delete_tournament', args=[self.t.pk]))
         self.assertEqual(resp.status_code, 405)
+
+    def test_delete_button_only_shown_to_superusers(self):
+        delete_url = reverse('delete_tournament', args=[self.t.pk])
+        detail_url = reverse('tournament_detail', args=[self.t.pk])
+
+        self.client.force_login(self.user)
+        self.assertNotContains(self.client.get(detail_url), delete_url)
+
+        self.client.force_login(self.make_superuser())
+        self.assertContains(self.client.get(detail_url), delete_url)
 
 
 class TournamentDetailViewTests(TestCase):

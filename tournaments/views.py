@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_POST
 
 from .models import Tournament, Player, TournamentEntry, Match, Payout, ApiToken
@@ -69,7 +70,10 @@ def create_tournament(request):
 @login_required
 @require_POST
 def delete_tournament(request, pk):
-    tournament = get_object_or_404(Tournament, pk=pk, created_by=request.user)
+    # Deleting is for site superusers only, whoever created the tournament.
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    tournament = get_object_or_404(Tournament, pk=pk)
     name = tournament.name
     tournament.delete()
     messages.success(request, f'Tournament "{name}" deleted.')
@@ -95,6 +99,7 @@ def tournament_detail(request, pk):
         'new_player_form': new_player_form,
         'existing_player_form': existing_player_form,
         'can_manage': user is not None and tournament.created_by == user,
+        'can_delete': user is not None and user.is_superuser,
         'payouts_with_amounts': payouts_with_amounts,
         'total_pot': total_pot,
         'payout_form': payout_form,

@@ -18,6 +18,7 @@ from .bracket import (
     get_round_robin_standings,
     get_se_placements,
     get_de_placements,
+    placement_payout,
 )
 
 
@@ -223,7 +224,7 @@ def bracket_view(request, pk):
         context['bracket'] = list(zip(round_labels, rounds))
         placements = get_se_placements(tournament)
         context['placements'] = [
-            (label, entries, _placement_payout(payout_map, start_place, len(entries)))
+            (label, entries, placement_payout(payout_map, start_place, len(entries)))
             for label, entries, start_place in placements
         ]
         return render(request, 'tournaments/bracket.html', context)
@@ -231,7 +232,7 @@ def bracket_view(request, pk):
         context.update(get_de_data(tournament))
         placements = get_de_placements(tournament)
         context['placements'] = [
-            (label, entries, _placement_payout(payout_map, start_place, len(entries)))
+            (label, entries, placement_payout(payout_map, start_place, len(entries)))
             for label, entries, start_place in placements
         ]
         return render(request, 'tournaments/double_elimination.html', context)
@@ -324,23 +325,6 @@ def api_token_view(request):
 
     token = ApiToken.objects.filter(user=request.user).first()
     return render(request, 'tournaments/api_token.html', {'token': token, 'reveal': False})
-
-
-def _placement_payout(payout_map, start_place, entry_count):
-    """Per-player payout for a placement that spans `entry_count` places.
-
-    For ties, players split the combined payouts of every place they cover —
-    e.g. two T-7th players split (7th payout + 8th payout) evenly. Places with
-    no configured payout contribute $0, and a wholly unpaid placement returns
-    None so the template can skip the payout column.
-    """
-    from decimal import Decimal
-    total = Decimal('0')
-    for place in range(start_place, start_place + entry_count):
-        total += payout_map.get(place, Decimal('0'))
-    if total == 0:
-        return None
-    return total / entry_count
 
 
 def _round_labels(rounds):

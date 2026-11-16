@@ -23,4 +23,5 @@ urlpatterns = [
     path('api/token/', api.obtain_token, name='api_obtain_token'),
     path('api/tournaments/', api.create_tournament, name='api_create_tournament'),
     path('api/tournaments/<int:pk>/payouts/', api.add_payout, name='api_add_payout'),
+    path('api/tournaments/<int:pk>/results/', api.tournament_results, name='api_tournament_results'),
 ]

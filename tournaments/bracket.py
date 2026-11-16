@@ -1,4 +1,5 @@
 import math
+from decimal import Decimal
 
 
 def _bracket_positions(bracket_size):
@@ -680,6 +681,22 @@ def _ordinal(n):
     if 10 <= n % 100 <= 20:
         return f'{n}th'
     return f'{n}{ {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th") }'
+
+
+def placement_payout(payout_map, start_place, entry_count):
+    """Per-player payout for a placement that spans `entry_count` places.
+
+    For ties, players split the combined payouts of every place they cover —
+    e.g. two T-7th players split (7th payout + 8th payout) evenly. Places with
+    no configured payout contribute $0, and a wholly unpaid placement returns
+    None so callers can skip the payout column.
+    """
+    total = Decimal('0')
+    for place in range(start_place, start_place + entry_count):
+        total += payout_map.get(place, Decimal('0'))
+    if total == 0:
+        return None
+    return total / entry_count
 
 
 def get_se_placements(tournament):

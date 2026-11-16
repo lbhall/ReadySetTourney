@@ -7,8 +7,15 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
+from .bracket import (
+    _ordinal,
+    get_de_placements,
+    get_round_robin_standings,
+    get_se_placements,
+    placement_payout,
+)
 from .models import (
     ApiToken,
     GAME_CHOICES,
@@ -257,3 +264,87 @@ def obtain_token(request):
         token = ApiToken.generate_for(user)
 
     return JsonResponse({'token': token.key})
+
+
+def _entry_json(entry):
+    if entry is None:
+        return None
+    return {'id': entry.id, 'name': entry.player.name, 'seed': entry.seed}
+
+
+def _money(value):
+    return None if value is None else f'{value:.2f}'
+
+
+def tournament_placements(tournament):
+    """Final placements as (label, [entries], start_place, per-player payout),
+    whatever the format. Round robins place every entry by the standings;
+    brackets place only the champion and the eliminated."""
+    payout_map = tournament.payout_amounts()
+    if tournament.format == 'round_robin':
+        rows = []
+        for i, row in enumerate(get_round_robin_standings(tournament), start=1):
+            rows.append((_ordinal(i), [row['entry']], i, payout_map.get(i)))
+        return rows
+    if tournament.format == 'double_elim':
+        placements = get_de_placements(tournament)
+    else:
+        placements = get_se_placements(tournament)
+    return [
+        (label, entries, start_place, placement_payout(payout_map, start_place, len(entries)))
+        for label, entries, start_place in placements
+    ]
+
+
+@require_GET
+def tournament_results(request, pk):
+    """Public, read-only JSON of a tournament: entries, matches and final
+    placements with payouts. The bracket page is public, so this is too. It
+    exists so a league site can import an end-of-season tournament's results."""
+    try:
+        tournament = Tournament.objects.select_related('venue').get(pk=pk)
+    except Tournament.DoesNotExist:
+        return _err(f'Tournament {pk} not found.', status=404)
+
+    entries = list(tournament.entries.select_related('player').order_by('seed'))
+    matches = list(
+        tournament.matches.select_related(
+            'player1__player', 'player2__player', 'winner__player',
+        ).order_by('bracket', 'round_number', 'match_number')
+    )
+
+    return JsonResponse({
+        'id': tournament.id,
+        'name': tournament.name,
+        'game_type': tournament.game_type,
+        'format': tournament.format,
+        'status': tournament.status,
+        'date': tournament.date.date().isoformat() if tournament.date else None,
+        'venue': tournament.venue.name if tournament.venue else None,
+        'entry_fee': _money(tournament.entry_fee),
+        'added_money': _money(tournament.added_money),
+        'total_pot': _money(tournament.total_pot()),
+        'url': request.build_absolute_uri(f'/tournaments/{tournament.id}/bracket/'),
+        'entries': [_entry_json(entry) for entry in entries],
+        'placements': [
+            {
+                'label': label,
+                'place': start_place,
+                'entries': [_entry_json(entry) for entry in placed],
+                'payout': _money(payout),
+            }
+            for label, placed, start_place, payout in tournament_placements(tournament)
+        ],
+        'matches': [
+            {
+                'bracket': match.bracket,
+                'round': match.round_number,
+                'match': match.match_number,
+                'player1': _entry_json(match.player1),
+                'player2': _entry_json(match.player2),
+                'winner': _entry_json(match.winner),
+                'is_bye': match.is_bye,
+            }
+            for match in matches
+        ],
+    })
